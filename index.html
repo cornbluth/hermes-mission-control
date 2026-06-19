@@ -931,7 +931,7 @@
         <div class="nav-item">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
           Agents
-          <span class="nav-badge">4</span>
+          <span class="nav-badge">1</span>
         </div>
         <div class="nav-item">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
@@ -986,7 +986,7 @@
       <header class="header animate-in">
         <div class="header-left">
           <h1>Mission Control</h1>
-          <p>Hermes AgentOS v2.4.1 — All agents operational</p>
+          <p>Hermes AgentOS — OWL Orchestrator on Telegram</p>
         </div>
         <div class="header-right">
           <div class="search-box">
@@ -1020,10 +1020,10 @@
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2"/></svg>
             </div>
           </div>
-          <div class="stat-value">4</div>
+          <div class="stat-value">1</div>
           <div class="stat-change up">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
-            All online
+            OWL online
           </div>
         </div>
 
@@ -1080,51 +1080,22 @@
           <div class="card-body">
             <div class="agent-list">
               <div class="agent-item">
-                <div class="agent-avatar scout">SC</div>
+                <div class="agent-avatar dev">OW</div>
                 <div class="agent-info">
-                  <div class="agent-name">Scout</div>
-                  <div class="agent-role">Reconnaissance & Monitoring</div>
+                  <div class="agent-name">OWL</div>
+                  <div class="agent-role">Orchestrator — Forge DevOps & Builder</div>
                 </div>
                 <div class="agent-meta">
                   <div class="agent-status-text online">● Online</div>
-                  <div class="agent-last-seen">2m ago</div>
+                  <div class="agent-last-seen">Active now</div>
                 </div>
               </div>
+            </div>
 
-              <div class="agent-item">
-                <div class="agent-avatar scribe">SR</div>
-                <div class="agent-info">
-                  <div class="agent-name">Scribe</div>
-                  <div class="agent-role">Documentation & Knowledge</div>
-                </div>
-                <div class="agent-meta">
-                  <div class="agent-status-text busy">● Busy</div>
-                  <div class="agent-last-seen">5m ago</div>
-                </div>
-              </div>
-
-              <div class="agent-item">
-                <div class="agent-avatar reach">RH</div>
-                <div class="agent-info">
-                  <div class="agent-name">Reach</div>
-                  <div class="agent-role">Outreach & Communication</div>
-                </div>
-                <div class="agent-meta">
-                  <div class="agent-status-text online">● Online</div>
-                  <div class="agent-last-seen">1m ago</div>
-                </div>
-              </div>
-
-              <div class="agent-item">
-                <div class="agent-avatar dev">DV</div>
-                <div class="agent-info">
-                  <div class="agent-name">Dev</div>
-                  <div class="agent-role">Development & Engineering</div>
-                </div>
-                <div class="agent-meta">
-                  <div class="agent-status-text online">● Online</div>
-                  <div class="agent-last-seen">30s ago</div>
-                </div>
+            <div style="margin-top: 20px;">
+              <div style="font-size: 12px; color: var(--text-dim); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.05em;">PM2 Services</div>
+              <div class="services-list" id="services-list" style="display: flex; flex-direction: column; gap: 6px;">
+                <!-- Populated by JS -->
               </div>
             </div>
 
@@ -1305,23 +1276,42 @@
       // Active agents = PM2 processes that are online
       const procs = data.processes || [];
       const statValues = document.querySelectorAll('.stat-value');
-      if (statValues.length >= 1) statValues[0].textContent = procs.length;
+      if (statValues.length >= 1) statValues[0].textContent = '1';
 
-      // Uptime from longest-running process
-      const maxUptime = Math.max(...procs.map(p => p.uptime || 0));
-      if (statValues.length >= 4) statValues[3].textContent = formatUptime(maxUptime);
+      // Uptime from forge-hermes process
+      const forgeProc = procs.find(p => p.name === 'forge-hermes');
+      if (statValues.length >= 4) statValues[3].textContent = formatUptime(forgeProc?.uptime || 0);
 
       // Session info
       if (data.session) {
-        // Messages = API calls
-        if (statValues.length >= 3) statValues[3].textContent = data.session.apiCalls || '—';
+        if (statValues.length >= 3) statValues[2].textContent = data.session.apiCalls || '—';
       }
 
       // Update agent list from real processes
       updateAgentList(procs);
 
+      // Update services list
+      updateServicesList(procs);
+
       // Update terminal with real data
       updateTerminal(procs, data.session);
+    }
+
+    // ─── Build services list from PM2 processes (excluding forge-hermes) ───
+    function updateServicesList(procs) {
+      const list = document.getElementById('services-list');
+      if (!list) return;
+
+      const services = procs.filter(p => p.name !== 'forge-hermes');
+      list.innerHTML = services.map(p => {
+        const memMB = p.memory ? (p.memory / (1024 * 1024)).toFixed(0) : '?';
+        return `<div style="display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: rgba(255,255,255,0.02); border-radius: 8px; font-size: 12px;">
+          <span style="color: var(--green);">●</span>
+          <span style="color: var(--text); font-weight: 500;">${p.name}</span>
+          <span style="color: var(--text-dim); margin-left: auto;">${memMB}MB</span>
+          <span style="color: var(--text-dim); font-family: var(--mono); font-size: 10px;">PID ${p.pid}</span>
+        </div>`;
+      }).join('');
     }
 
     // ─── Build agent list from real PM2 processes ───
@@ -1329,42 +1319,26 @@
       const agentList = document.querySelector('.agent-list');
       if (!agentList) return;
 
-      // Map PM2 process names to agent identities
-      const agentMap = {
-        'forge-hermes': { name: 'Forge', role: 'DevOps & Builder', color: 'dev', icon: 'FH' },
-        'sitesnap': { name: 'Sitesnap', role: 'Site Management', color: 'scout', icon: 'SN' },
-        'stefaniemarie': { name: 'Stephanie', role: 'Studio Agent', color: 'scribe', icon: 'SM' },
-        'whiskers': { name: 'Whiskers', role: 'Pet Sitting AI', color: 'reach', icon: 'WH' },
-        'dogtrainerli': { name: 'DogTrainer', role: 'Training Assistant', color: 'scout', icon: 'DT' },
-        'status-server': { name: 'Status', role: 'System Monitor', color: 'dev', icon: 'SS' },
-        'ecosystem.somatic': { name: 'Somatic', role: 'Movement AI', color: 'scribe', icon: 'SO' },
-      };
-
-      // Keep static agent items but update their status from PM2
+      // Only show forge-hermes (OWL) as the real agent
+      const forgeProc = procs.find(p => p.name === 'forge-hermes');
       const items = agentList.querySelectorAll('.agent-item');
-      items.forEach((item, i) => {
-        const avatar = item.querySelector('.agent-avatar');
-        const avatarText = avatar ? avatar.textContent.trim() : '';
+      items.forEach((item) => {
         const meta = item.querySelector('.agent-meta');
         const statusText = meta ? meta.querySelector('.agent-status-text') : null;
         const lastSeen = meta ? meta.querySelector('.agent-last-seen') : null;
 
-        // Find matching process
-        const matchKey = Object.keys(agentMap).find(k => agentMap[k].icon === avatarText);
-        const proc = procs.find(p => p.name === matchKey);
-
-        if (proc) {
+        if (forgeProc) {
           if (statusText) {
             statusText.textContent = '● Online';
             statusText.className = 'agent-status-text online';
           }
-          if (lastSeen) lastSeen.textContent = formatUptime(proc.uptime) + ' uptime';
+          if (lastSeen) lastSeen.textContent = formatUptime(forgeProc.uptime) + ' uptime';
         } else {
           if (statusText) {
-            statusText.textContent = '● Idle';
+            statusText.textContent = '● Offline';
             statusText.className = 'agent-status-text idle';
           }
-          if (lastSeen) lastSeen.textContent = 'not in PM2';
+          if (lastSeen) lastSeen.textContent = 'not running';
         }
       });
     }

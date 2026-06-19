@@ -986,7 +986,7 @@
       <header class="header animate-in">
         <div class="header-left">
           <h1>Mission Control</h1>
-          <p>Hermes AgentOS — OWL Orchestrator on Telegram</p>
+          <p>Hermes AgentOS — Forge on Telegram</p>
         </div>
         <div class="header-right">
           <div class="search-box">
@@ -1023,7 +1023,7 @@
           <div class="stat-value">1</div>
           <div class="stat-change up">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
-            OWL online
+            Forge online
           </div>
         </div>
 
@@ -1080,10 +1080,10 @@
           <div class="card-body">
             <div class="agent-list">
               <div class="agent-item">
-                <div class="agent-avatar dev">OW</div>
+                <div class="agent-avatar dev">FG</div>
                 <div class="agent-info">
-                  <div class="agent-name">OWL</div>
-                  <div class="agent-role">Orchestrator — Forge DevOps & Builder</div>
+                  <div class="agent-name">Forge</div>
+                  <div class="agent-role">DevOps & Builder — Hermes Agent</div>
                 </div>
                 <div class="agent-meta">
                   <div class="agent-status-text online">● Online</div>
@@ -1319,7 +1319,7 @@
       const agentList = document.querySelector('.agent-list');
       if (!agentList) return;
 
-      // Only show forge-hermes (OWL) as the real agent
+      // Only show forge-hermes (Forge) as the real agent
       const forgeProc = procs.find(p => p.name === 'forge-hermes');
       const items = agentList.querySelectorAll('.agent-item');
       items.forEach((item) => {

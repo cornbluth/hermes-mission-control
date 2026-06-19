@@ -1,0 +1,1457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hermes Mission Control</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --bg: #0A0A0A;
+      --surface: #111111;
+      --surface-2: #1A1A1A;
+      --surface-3: #222222;
+      --border: rgba(255, 255, 255, 0.06);
+      --border-hover: rgba(255, 255, 255, 0.12);
+      --text: #F1F1F1;
+      --text-muted: rgba(241, 241, 241, 0.5);
+      --text-dim: rgba(241, 241, 241, 0.3);
+      --accent: #FF742E;
+      --accent-glow: rgba(255, 116, 46, 0.15);
+      --accent-border: rgba(255, 116, 46, 0.3);
+      --green: #22C55E;
+      --green-dim: rgba(34, 197, 94, 0.15);
+      --blue: #3B82F6;
+      --blue-dim: rgba(59, 130, 246, 0.15);
+      --purple: #A855F7;
+      --purple-dim: rgba(168, 85, 247, 0.15);
+      --red: #EF4444;
+      --red-dim: rgba(239, 68, 68, 0.15);
+      --radius: 16px;
+      --radius-sm: 10px;
+      --font: 'Space Grotesk', sans-serif;
+      --mono: 'JetBrains Mono', monospace;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* === AMBIENT BACKGROUND === */
+    .ambient {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+
+    .ambient-orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(120px);
+      opacity: 0.4;
+      animation: orbDrift 25s ease-in-out infinite;
+    }
+
+    .ambient-orb:nth-child(1) {
+      width: 600px; height: 600px;
+      background: radial-gradient(circle, rgba(255,116,46,0.12) 0%, transparent 70%);
+      top: -10%; left: -5%;
+      animation-duration: 30s;
+    }
+
+    .ambient-orb:nth-child(2) {
+      width: 500px; height: 500px;
+      background: radial-gradient(circle, rgba(59,130,246,0.08) 0%, transparent 70%);
+      top: 40%; right: -10%;
+      animation-duration: 35s;
+      animation-delay: -10s;
+    }
+
+    .ambient-orb:nth-child(3) {
+      width: 400px; height: 400px;
+      background: radial-gradient(circle, rgba(168,85,247,0.06) 0%, transparent 70%);
+      bottom: 10%; left: 30%;
+      animation-duration: 28s;
+      animation-delay: -20s;
+    }
+
+    .ambient-orb:nth-child(4) {
+      width: 350px; height: 350px;
+      background: radial-gradient(circle, rgba(34,197,94,0.05) 0%, transparent 70%);
+      top: 60%; left: 60%;
+      animation-duration: 32s;
+      animation-delay: -5s;
+    }
+
+    @keyframes orbDrift {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      25% { transform: translate(30px, -20px) scale(1.05); }
+      50% { transform: translate(-20px, 30px) scale(0.95); }
+      75% { transform: translate(15px, 15px) scale(1.02); }
+    }
+
+    /* Dot grid overlay */
+    .dot-grid {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      background-image: radial-gradient(rgba(255,255,255,0.03) 1px, transparent 1px);
+      background-size: 24px 24px;
+    }
+
+    /* === LAYOUT === */
+    .app {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* === SIDEBAR === */
+    .sidebar {
+      width: 260px;
+      background: rgba(10, 10, 10, 0.8);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-right: 1px solid var(--border);
+      padding: 24px 16px;
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      z-index: 100;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 0 8px 24px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 24px;
+    }
+
+    .logo-icon {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, var(--accent), #FF9A5C);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 16px;
+      color: #fff;
+      box-shadow: 0 4px 16px rgba(255,116,46,0.3);
+    }
+
+    .logo-text {
+      font-weight: 700;
+      font-size: 18px;
+      letter-spacing: -0.02em;
+    }
+
+    .logo-text span {
+      color: var(--accent);
+    }
+
+    .nav-section {
+      margin-bottom: 24px;
+    }
+
+    .nav-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-dim);
+      padding: 0 12px;
+      margin-bottom: 8px;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 12px;
+      border-radius: var(--radius-sm);
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .nav-item:hover {
+      background: rgba(255,255,255,0.04);
+      color: var(--text);
+    }
+
+    .nav-item.active {
+      background: var(--accent-glow);
+      color: var(--accent);
+      border: 1px solid var(--accent-border);
+    }
+
+    .nav-item svg {
+      width: 18px;
+      height: 18px;
+      flex-shrink: 0;
+    }
+
+    .nav-badge {
+      margin-left: auto;
+      background: var(--accent);
+      color: #fff;
+      font-size: 10px;
+      font-weight: 600;
+      padding: 2px 7px;
+      border-radius: 10px;
+    }
+
+    .sidebar-footer {
+      margin-top: auto;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+    }
+
+    .agent-status {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      background: rgba(34, 197, 94, 0.08);
+      border: 1px solid rgba(34, 197, 94, 0.2);
+      border-radius: var(--radius-sm);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      background: var(--green);
+      border-radius: 50%;
+      box-shadow: 0 0 8px rgba(34, 197, 94, 0.5);
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .agent-status-text {
+      font-size: 12px;
+      color: var(--green);
+      font-weight: 500;
+    }
+
+    /* === MAIN === */
+    .main {
+      flex: 1;
+      margin-left: 260px;
+      padding: 32px 40px;
+      max-width: 1400px;
+    }
+
+    /* === HEADER === */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 32px;
+    }
+
+    .header-left h1 {
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      margin-bottom: 4px;
+    }
+
+    .header-left p {
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .search-box {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 8px 14px;
+      transition: border-color 0.15s;
+    }
+
+    .search-box:focus-within {
+      border-color: var(--accent-border);
+    }
+
+    .search-box svg {
+      width: 16px;
+      height: 16px;
+      color: var(--text-dim);
+    }
+
+    .search-box input {
+      background: none;
+      border: none;
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 13px;
+      outline: none;
+      width: 180px;
+    }
+
+    .search-box input::placeholder {
+      color: var(--text-dim);
+    }
+
+    .btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      border-radius: var(--radius-sm);
+      font-family: var(--font);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      border: none;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+      box-shadow: 0 2px 12px rgba(255,116,46,0.3);
+    }
+
+    .btn-primary:hover {
+      background: #FF8A45;
+      box-shadow: 0 4px 20px rgba(255,116,46,0.4);
+      transform: translateY(-1px);
+    }
+
+    .btn-ghost {
+      background: rgba(255,255,255,0.04);
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+    }
+
+    .btn-ghost:hover {
+      background: rgba(255,255,255,0.08);
+      color: var(--text);
+      border-color: var(--border-hover);
+    }
+
+    /* === STATS GRID === */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+
+    .stat-card {
+      background: rgba(255,255,255,0.02);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.2s ease;
+    }
+
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--accent), transparent);
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    .stat-card:hover {
+      border-color: var(--border-hover);
+      background: rgba(255,255,255,0.03);
+    }
+
+    .stat-card:hover::before {
+      opacity: 1;
+    }
+
+    .stat-card.accent::before {
+      background: linear-gradient(90deg, transparent, var(--accent), transparent);
+      opacity: 0.5;
+    }
+
+    .stat-card.green::before {
+      background: linear-gradient(90deg, transparent, var(--green), transparent);
+      opacity: 0.5;
+    }
+
+    .stat-card.blue::before {
+      background: linear-gradient(90deg, transparent, var(--blue), transparent);
+      opacity: 0.5;
+    }
+
+    .stat-card.purple::before {
+      background: linear-gradient(90deg, transparent, var(--purple), transparent);
+      opacity: 0.5;
+    }
+
+    .stat-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .stat-label {
+      font-size: 12px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-weight: 500;
+    }
+
+    .stat-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .stat-icon.orange { background: var(--accent-glow); }
+    .stat-icon.green { background: var(--green-dim); }
+    .stat-icon.blue { background: var(--blue-dim); }
+    .stat-icon.purple { background: var(--purple-dim); }
+
+    .stat-value {
+      font-size: 32px;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      margin-bottom: 4px;
+    }
+
+    .stat-change {
+      font-size: 12px;
+      color: var(--text-dim);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .stat-change.up { color: var(--green); }
+    .stat-change.down { color: var(--red); }
+
+    /* === CONTENT GRID === */
+    .content-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+
+    .card {
+      background: rgba(255,255,255,0.02);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 24px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .card-title {
+      font-size: 16px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+    }
+
+    .card-body {
+      padding: 20px 24px;
+    }
+
+    /* === AGENT LIST === */
+    .agent-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .agent-item {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 14px 16px;
+      border-radius: var(--radius-sm);
+      background: rgba(255,255,255,0.02);
+      border: 1px solid transparent;
+      transition: all 0.15s ease;
+    }
+
+    .agent-item:hover {
+      background: rgba(255,255,255,0.04);
+      border-color: var(--border);
+    }
+
+    .agent-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+
+    .agent-avatar.scout { background: var(--blue-dim); color: var(--blue); }
+    .agent-avatar.scribe { background: var(--purple-dim); color: var(--purple); }
+    .agent-avatar.reach { background: var(--green-dim); color: var(--green); }
+    .agent-avatar.dev { background: var(--accent-glow); color: var(--accent); }
+
+    .agent-info {
+      flex: 1;
+    }
+
+    .agent-name {
+      font-weight: 600;
+      font-size: 14px;
+      margin-bottom: 2px;
+    }
+
+    .agent-role {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .agent-meta {
+      text-align: right;
+    }
+
+    .agent-status-text {
+      font-size: 12px;
+      font-weight: 500;
+      margin-bottom: 2px;
+    }
+
+    .agent-status-text.online { color: var(--green); }
+    .agent-status-text.busy { color: var(--accent); }
+    .agent-status-text.idle { color: var(--text-dim); }
+
+    .agent-last-seen {
+      font-size: 11px;
+      color: var(--text-dim);
+    }
+
+    /* === TASK LIST === */
+    .task-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .task-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      border-radius: var(--radius-sm);
+      transition: background 0.15s;
+      cursor: pointer;
+    }
+
+    .task-item:hover {
+      background: rgba(255,255,255,0.03);
+    }
+
+    .task-check {
+      width: 18px;
+      height: 18px;
+      border-radius: 5px;
+      border: 2px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: all 0.15s;
+    }
+
+    .task-check.checked {
+      background: var(--green);
+      border-color: var(--green);
+    }
+
+    .task-text {
+      flex: 1;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .task-text.completed {
+      text-decoration: line-through;
+      color: var(--text-dim);
+    }
+
+    .task-priority {
+      font-size: 10px;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .task-priority.high { background: var(--red-dim); color: var(--red); }
+    .task-priority.medium { background: var(--accent-glow); color: var(--accent); }
+    .task-priority.low { background: var(--green-dim); color: var(--green); }
+
+    /* === ACTIVITY FEED === */
+    .activity-feed {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .activity-item {
+      display: flex;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 13px;
+    }
+
+    .activity-item:last-child {
+      border-bottom: none;
+    }
+
+    .activity-time {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text-dim);
+      flex-shrink: 0;
+      width: 50px;
+    }
+
+    .activity-text {
+      color: var(--text-muted);
+    }
+
+    .activity-text strong {
+      color: var(--text);
+      font-weight: 500;
+    }
+
+    /* === SCHEDULE === */
+    .schedule-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .schedule-item {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 12px 16px;
+      border-left: 3px solid var(--accent);
+      background: rgba(255,116,46,0.04);
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    }
+
+    .schedule-item.blue { border-left-color: var(--blue); background: rgba(59,130,246,0.04); }
+    .schedule-item.purple { border-left-color: var(--purple); background: rgba(168,85,247,0.04); }
+    .schedule-item.green { border-left-color: var(--green); background: rgba(34,197,94,0.04); }
+
+    .schedule-time {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--text-muted);
+      width: 60px;
+      flex-shrink: 0;
+    }
+
+    .schedule-info {
+      flex: 1;
+    }
+
+    .schedule-title {
+      font-size: 13px;
+      font-weight: 500;
+      margin-bottom: 2px;
+    }
+
+    .schedule-meta {
+      font-size: 11px;
+      color: var(--text-dim);
+    }
+
+    /* === PROGRESS BAR === */
+    .progress-section {
+      margin-top: 16px;
+    }
+
+    .progress-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+
+    .progress-bar {
+      height: 6px;
+      background: rgba(255,255,255,0.06);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      border-radius: 3px;
+      transition: width 1s ease;
+    }
+
+    .progress-fill.orange { background: linear-gradient(90deg, var(--accent), #FF9A5C); }
+    .progress-fill.green { background: linear-gradient(90deg, var(--green), #4ADE80); }
+    .progress-fill.blue { background: linear-gradient(90deg, var(--blue), #60A5FA); }
+
+    /* === SECTION TABS === */
+    .section-tabs {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 24px;
+      background: rgba(255,255,255,0.03);
+      border-radius: var(--radius-sm);
+      padding: 4px;
+      width: fit-content;
+    }
+
+    .tab {
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .tab:hover {
+      color: var(--text);
+    }
+
+    .tab.active {
+      background: var(--accent-glow);
+      color: var(--accent);
+    }
+
+    /* === BOTTOM ROW === */
+    .bottom-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    /* === TERMINAL === */
+    .terminal {
+      background: rgba(0,0,0,0.4);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      font-family: var(--mono);
+    }
+
+    .terminal-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 16px;
+      background: rgba(255,255,255,0.03);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .terminal-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+
+    .terminal-dot.red { background: #FF5F56; }
+    .terminal-dot.yellow { background: #FFBD2E; }
+    .terminal-dot.green { background: #27C93F; }
+
+    .terminal-title {
+      margin-left: 8px;
+      font-size: 11px;
+      color: var(--text-dim);
+    }
+
+    .terminal-body {
+      padding: 16px;
+      font-size: 12px;
+      line-height: 1.8;
+      color: var(--text-muted);
+      min-height: 150px;
+    }
+
+    .terminal-body .prompt { color: var(--green); }
+    .terminal-body .output { color: var(--text-muted); }
+    .terminal-body .comment { color: var(--text-dim); }
+
+    /* === SCROLLBAR === */
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255,255,255,0.1);
+      border-radius: 3px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(255,255,255,0.2);
+    }
+
+    /* === ANIMATIONS === */
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .animate-in {
+      animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      opacity: 0;
+    }
+
+    .delay-1 { animation-delay: 0.05s; }
+    .delay-2 { animation-delay: 0.1s; }
+    .delay-3 { animation-delay: 0.15s; }
+    .delay-4 { animation-delay: 0.2s; }
+    .delay-5 { animation-delay: 0.25s; }
+    .delay-6 { animation-delay: 0.3s; }
+    .delay-7 { animation-delay: 0.35s; }
+    .delay-8 { animation-delay: 0.4s; }
+
+    /* === RESPONSIVE === */
+    @media (max-width: 1200px) {
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+      .content-grid { grid-template-columns: 1fr; }
+      .bottom-grid { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 768px) {
+      .sidebar { display: none; }
+      .main { margin-left: 0; padding: 20px; }
+      .stats-grid { grid-template-columns: 1fr; }
+      .header { flex-direction: column; align-items: flex-start; gap: 16px; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Ambient Background -->
+  <div class="ambient">
+    <div class="ambient-orb"></div>
+    <div class="ambient-orb"></div>
+    <div class="ambient-orb"></div>
+    <div class="ambient-orb"></div>
+  </div>
+  <div class="dot-grid"></div>
+
+  <div class="app">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="logo">
+        <div class="logo-icon">H</div>
+        <div class="logo-text">Hermes<span>Agent</span></div>
+      </div>
+
+      <nav class="nav-section">
+        <div class="nav-label">Main</div>
+        <div class="nav-item active">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+          Overview
+        </div>
+        <div class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+          Agents
+          <span class="nav-badge">4</span>
+        </div>
+        <div class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+          Tasks
+          <span class="nav-badge">12</span>
+        </div>
+        <div class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          Schedule
+        </div>
+      </nav>
+
+      <nav class="nav-section">
+        <div class="nav-label">Content</div>
+        <div class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          Articles
+        </div>
+        <div class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+          Knowledge Base
+        </div>
+        <div class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          Favorites
+        </div>
+      </nav>
+
+      <nav class="nav-section">
+        <div class="nav-label">System</div>
+        <div class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+          Activity Log
+        </div>
+        <div class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12.22 2h-.44a2 2 0 00-2 2v.18a2 2 0 01-1 1.73l-.43.25a2 2 0 01-2 0l-.15-.08a2 2 0 00-2.73.73l-.22.38a2 2 0 00.73 2.73l.15.1a2 2 0 011 1.72v.51a2 2 0 01-1 1.74l-.15.09a2 2 0 00-.73 2.73l.22.38a2 2 0 002.73.73l.15-.08a2 2 0 012 0l.43.25a2 2 0 011 1.73V20a2 2 0 002 2h.44a2 2 0 002-2v-.18a2 2 0 011-1.73l.43-.25a2 2 0 012 0l.15.08a2 2 0 002.73-.73l.22-.39a2 2 0 00-.73-2.73l-.15-.08a2 2 0 01-1-1.74v-.5a2 2 0 011-1.74l.15-.09a2 2 0 00.73-2.73l-.22-.38a2 2 0 00-2.73-.73l-.15.08a2 2 0 01-2 0l-.43-.25a2 2 0 01-1-1.73V4a2 2 0 00-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+          Settings
+        </div>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="agent-status">
+          <div class="status-dot"></div>
+          <div class="agent-status-text">All Systems Online</div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main">
+      <!-- Header -->
+      <header class="header animate-in">
+        <div class="header-left">
+          <h1>Mission Control</h1>
+          <p>Hermes AgentOS v2.4.1 — All agents operational</p>
+        </div>
+        <div class="header-right">
+          <div class="search-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+            <input type="text" placeholder="Search agents, tasks...">
+          </div>
+          <button class="btn btn-ghost">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+          </button>
+          <button class="btn btn-primary">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            New Task
+          </button>
+        </div>
+      </header>
+
+      <!-- Tabs -->
+      <div class="section-tabs animate-in delay-1">
+        <div class="tab active">Overview</div>
+        <div class="tab">Analytics</div>
+        <div class="tab">Reports</div>
+        <div class="tab">Settings</div>
+      </div>
+
+      <!-- Stats Grid -->
+      <div class="stats-grid">
+        <div class="stat-card accent animate-in delay-2">
+          <div class="stat-header">
+            <span class="stat-label">Active Agents</span>
+            <div class="stat-icon orange">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2"/></svg>
+            </div>
+          </div>
+          <div class="stat-value">4</div>
+          <div class="stat-change up">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+            All online
+          </div>
+        </div>
+
+        <div class="stat-card green animate-in delay-3">
+          <div class="stat-header">
+            <span class="stat-label">Tasks Today</span>
+            <div class="stat-icon green">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+            </div>
+          </div>
+          <div class="stat-value">24</div>
+          <div class="stat-change up">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+            +18% from yesterday
+          </div>
+        </div>
+
+        <div class="stat-card blue animate-in delay-4">
+          <div class="stat-header">
+            <span class="stat-label">Messages</span>
+            <div class="stat-icon blue">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+            </div>
+          </div>
+          <div class="stat-value">142</div>
+          <div class="stat-change up">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+            +32% this hour
+          </div>
+        </div>
+
+        <div class="stat-card purple animate-in delay-5">
+          <div class="stat-header">
+            <span class="stat-label">Uptime</span>
+            <div class="stat-icon purple">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--purple)" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            </div>
+          </div>
+          <div class="stat-value">99.9%</div>
+          <div class="stat-change">
+            7 days streak
+          </div>
+        </div>
+      </div>
+
+      <!-- Content Grid -->
+      <div class="content-grid">
+        <!-- Agents Card -->
+        <div class="card animate-in delay-6">
+          <div class="card-header">
+            <h3 class="card-title">Agent Crew</h3>
+            <button class="btn btn-ghost" style="padding: 6px 12px; font-size: 12px;">View All</button>
+          </div>
+          <div class="card-body">
+            <div class="agent-list">
+              <div class="agent-item">
+                <div class="agent-avatar scout">SC</div>
+                <div class="agent-info">
+                  <div class="agent-name">Scout</div>
+                  <div class="agent-role">Reconnaissance & Monitoring</div>
+                </div>
+                <div class="agent-meta">
+                  <div class="agent-status-text online">● Online</div>
+                  <div class="agent-last-seen">2m ago</div>
+                </div>
+              </div>
+
+              <div class="agent-item">
+                <div class="agent-avatar scribe">SR</div>
+                <div class="agent-info">
+                  <div class="agent-name">Scribe</div>
+                  <div class="agent-role">Documentation & Knowledge</div>
+                </div>
+                <div class="agent-meta">
+                  <div class="agent-status-text busy">● Busy</div>
+                  <div class="agent-last-seen">5m ago</div>
+                </div>
+              </div>
+
+              <div class="agent-item">
+                <div class="agent-avatar reach">RH</div>
+                <div class="agent-info">
+                  <div class="agent-name">Reach</div>
+                  <div class="agent-role">Outreach & Communication</div>
+                </div>
+                <div class="agent-meta">
+                  <div class="agent-status-text online">● Online</div>
+                  <div class="agent-last-seen">1m ago</div>
+                </div>
+              </div>
+
+              <div class="agent-item">
+                <div class="agent-avatar dev">DV</div>
+                <div class="agent-info">
+                  <div class="agent-name">Dev</div>
+                  <div class="agent-role">Development & Engineering</div>
+                </div>
+                <div class="agent-meta">
+                  <div class="agent-status-text online">● Online</div>
+                  <div class="agent-last-seen">30s ago</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="progress-section">
+              <div class="progress-label">
+                <span>Collective Capacity</span>
+                <span>78%</span>
+              </div>
+              <div class="progress-bar">
+                <div class="progress-fill orange" style="width: 78%;"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Activity Feed -->
+        <div class="card animate-in delay-7">
+          <div class="card-header">
+            <h3 class="card-title">Live Activity</h3>
+            <div style="font-size: 12px; color: var(--green); display: flex; align-items: center; gap: 6px;">
+              <span style="width: 6px; height: 6px; background: var(--green); border-radius: 50%; animation: pulse 2s infinite;"></span>
+              Live
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="activity-feed">
+              <div class="activity-item">
+                <span class="activity-time">14:32</span>
+                <span class="activity-text"><strong>Scout</strong> completed monitoring sweep for discord-channel-3</span>
+              </div>
+              <div class="activity-item">
+                <span class="activity-time">14:28</span>
+                <span class="activity-text"><strong>Dev</strong> pushed commit #247 to hermes-core</span>
+              </div>
+              <div class="activity-item">
+                <span class="activity-time">14:25</span>
+                <span class="activity-text"><strong>Scribe</strong> updated knowledge base: API endpoints</span>
+              </div>
+              <div class="activity-item">
+                <span class="activity-time">14:21</span>
+                <span class="activity-text"><strong>Reach</strong> sent 3 outreach messages via Telegram</span>
+              </div>
+              <div class="activity-item">
+                <span class="activity-time">14:18</span>
+                <span class="activity-text"><strong>System</strong> backup completed successfully</span>
+              </div>
+              <div class="activity-item">
+                <span class="activity-time">14:15</span>
+                <span class="activity-text"><strong>Scout</strong> detected anomaly in channel traffic</span>
+              </div>
+              <div class="activity-item">
+                <span class="activity-time">14:12</span>
+                <span class="activity-text"><strong>Dev</strong> merged PR #128: memory optimization</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom Row -->
+      <div class="bottom-grid">
+        <!-- Schedule -->
+        <div class="card animate-in delay-8">
+          <div class="card-header">
+            <h3 class="card-title">Today's Schedule</h3>
+            <button class="btn btn-ghost" style="padding: 6px 12px; font-size: 12px;">Full Calendar</button>
+          </div>
+          <div class="card-body">
+            <div class="schedule-list">
+              <div class="schedule-item">
+                <div class="schedule-time">15:00</div>
+                <div class="schedule-info">
+                  <div class="schedule-title">Content Review</div>
+                  <div class="schedule-meta">Scribe • Discord #content</div>
+                </div>
+              </div>
+              <div class="schedule-item blue">
+                <div class="schedule-time">15:30</div>
+                <div class="schedule-info">
+                  <div class="schedule-title">Sprint Planning</div>
+                  <div class="schedule-meta">All Agents • Voice Channel</div>
+                </div>
+              </div>
+              <div class="schedule-item purple">
+                <div class="schedule-time">16:00</div>
+                <div class="schedule-info">
+                  <div class="schedule-title">Outreach Batch</div>
+                  <div class="schedule-meta">Reach • Telegram API</div>
+                </div>
+              </div>
+              <div class="schedule-item green">
+                <div class="schedule-time">17:00</div>
+                <div class="schedule-info">
+                  <div class="schedule-title">Database Cleanup</div>
+                  <div class="schedule-meta">Dev • SQLite</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="progress-section">
+              <div class="progress-label">
+                <span>Daily Progress</span>
+                <span>62%</span>
+              </div>
+              <div class="progress-bar">
+                <div class="progress-fill green" style="width: 62%;"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Terminal -->
+        <div class="card animate-in delay-8">
+          <div class="card-header">
+            <h3 class="card-title">Terminal</h3>
+            <button class="btn btn-ghost" style="padding: 6px 12px; font-size: 12px;">Clear</button>
+          </div>
+          <div class="terminal-body">
+            <div><span class="prompt">hermes@srv:~$</span> status --all</div>
+            <div class="output">→ Scout: monitoring 3 channels [OK]</div>
+            <div class="output">→ Scribe: indexing knowledge base [OK]</div>
+            <div class="output">→ Reach: queue=3, sent_today=47 [OK]</div>
+            <div class="output">→ Dev: building hermes-core@v2.4.1 [OK]</div>
+            <div class="comment">---</div>
+            <div><span class="prompt">hermes@srv:~$</span> agent logs --tail 3</div>
+            <div class="output">[Scout] 14:32:01 sweep complete — 0 issues</div>
+            <div class="output">[Dev] 14:28:15 commit pushed — 3 files</div>
+            <div class="output">[Reach] 14:21:03 messages delivered — 100%</div>
+            <div class="comment">---</div>
+            <div><span class="prompt">hermes@srv:~$</span> <span style="animation: pulse 1s infinite;">▊</span></div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    // ─── REAL DATA INTEGRATION ───
+    const API = '';
+
+    async function fetchJSON(path) {
+      try {
+        const res = await fetch(API + path);
+        return await res.json();
+      } catch (e) {
+        console.warn('API fetch failed:', path, e);
+        return null;
+      }
+    }
+
+    function formatUptime(ms) {
+      if (!ms) return '—';
+      const s = Math.floor(ms / 1000);
+      const h = Math.floor(s / 3600);
+      const m = Math.floor((s % 3600) / 60);
+      if (h > 24) return Math.floor(h / 24) + 'd ' + (h % 24) + 'h';
+      if (h > 0) return h + 'h ' + m + 'm';
+      return m + 'm';
+    }
+
+    function formatMemory(bytes) {
+      if (!bytes) return '—';
+      if (bytes > 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(0) + ' MB';
+      return (bytes / 1024).toFixed(0) + ' KB';
+    }
+
+    function statusDotClass(status) {
+      if (status === 'online') return 'online';
+      if (status === 'busy' || status === 'restarting') return 'busy';
+      return 'idle';
+    }
+
+    // ─── Update stats from real PM2 data ───
+    async function updateStats() {
+      const data = await fetchJSON('/api/status');
+      if (!data) return;
+
+      // Active agents = PM2 processes that are online
+      const procs = data.processes || [];
+      const statValues = document.querySelectorAll('.stat-value');
+      if (statValues.length >= 1) statValues[0].textContent = procs.length;
+
+      // Uptime from longest-running process
+      const maxUptime = Math.max(...procs.map(p => p.uptime || 0));
+      if (statValues.length >= 4) statValues[3].textContent = formatUptime(maxUptime);
+
+      // Session info
+      if (data.session) {
+        // Messages = API calls
+        if (statValues.length >= 3) statValues[3].textContent = data.session.apiCalls || '—';
+      }
+
+      // Update agent list from real processes
+      updateAgentList(procs);
+
+      // Update terminal with real data
+      updateTerminal(procs, data.session);
+    }
+
+    // ─── Build agent list from real PM2 processes ───
+    function updateAgentList(procs) {
+      const agentList = document.querySelector('.agent-list');
+      if (!agentList) return;
+
+      // Map PM2 process names to agent identities
+      const agentMap = {
+        'forge-hermes': { name: 'Forge', role: 'DevOps & Builder', color: 'dev', icon: 'FH' },
+        'sitesnap': { name: 'Sitesnap', role: 'Site Management', color: 'scout', icon: 'SN' },
+        'stefaniemarie': { name: 'Stephanie', role: 'Studio Agent', color: 'scribe', icon: 'SM' },
+        'whiskers': { name: 'Whiskers', role: 'Pet Sitting AI', color: 'reach', icon: 'WH' },
+        'dogtrainerli': { name: 'DogTrainer', role: 'Training Assistant', color: 'scout', icon: 'DT' },
+        'status-server': { name: 'Status', role: 'System Monitor', color: 'dev', icon: 'SS' },
+        'ecosystem.somatic': { name: 'Somatic', role: 'Movement AI', color: 'scribe', icon: 'SO' },
+      };
+
+      // Keep static agent items but update their status from PM2
+      const items = agentList.querySelectorAll('.agent-item');
+      items.forEach((item, i) => {
+        const avatar = item.querySelector('.agent-avatar');
+        const avatarText = avatar ? avatar.textContent.trim() : '';
+        const meta = item.querySelector('.agent-meta');
+        const statusText = meta ? meta.querySelector('.agent-status-text') : null;
+        const lastSeen = meta ? meta.querySelector('.agent-last-seen') : null;
+
+        // Find matching process
+        const matchKey = Object.keys(agentMap).find(k => agentMap[k].icon === avatarText);
+        const proc = procs.find(p => p.name === matchKey);
+
+        if (proc) {
+          if (statusText) {
+            statusText.textContent = '● Online';
+            statusText.className = 'agent-status-text online';
+          }
+          if (lastSeen) lastSeen.textContent = formatUptime(proc.uptime) + ' uptime';
+        } else {
+          if (statusText) {
+            statusText.textContent = '● Idle';
+            statusText.className = 'agent-status-text idle';
+          }
+          if (lastSeen) lastSeen.textContent = 'not in PM2';
+        }
+      });
+    }
+
+    // ─── Update terminal with real data ───
+    function updateTerminal(procs, session) {
+      const termBody = document.querySelector('.terminal-body');
+      if (!termBody) return;
+
+      const now = new Date();
+      const ts = now.toTimeString().slice(0, 8);
+      const procLines = procs.map(p =>
+        `<div class="output">→ ${p.name}: ${p.status} [PID ${p.pid}] ${formatMemory(p.memory)}</div>`
+      ).join('');
+
+      termBody.innerHTML = `
+        <div><span class="prompt">hermes@srv:~$</span> pm2 status --compact</div>
+        ${procLines}
+        <div class="comment">---</div>
+        <div><span class="prompt">hermes@srv:~$</span> session --info</div>
+        <div class="output">Model: ${session?.model || 'openrouter/owl-alpha'}</div>
+        <div class="output">API calls: ${session?.apiCalls || 0} | latency: ${session?.lastLatency || 0}s</div>
+        <div class="output">Cache: ${session?.cacheEfficiency || 0}% hit rate</div>
+        <div class="comment">---</div>
+        <div><span class="prompt">hermes@srv:~$</span> <span style="animation: pulse 1s infinite;">▊</span></div>
+      `;
+    }
+
+    // ─── Live activity feed from real logs ───
+    async function updateActivityFeed() {
+      const data = await fetchJSON('/api/logs?lines=8');
+      if (!data || !data.logs) return;
+
+      const feed = document.querySelector('.activity-feed');
+      if (!feed) return;
+
+      feed.innerHTML = '';
+      data.logs.forEach(log => {
+        const item = document.createElement('div');
+        item.className = 'activity-item';
+        const typeColor = log.type === 'tool' ? 'var(--accent)' : log.type === 'approval' ? 'var(--green)' : 'var(--blue)';
+        item.innerHTML = `
+          <span class="activity-time">${log.time || '--:--'}</span>
+          <span class="activity-text" style="border-left: 2px solid ${typeColor}; padding-left: 8px;">
+            ${log.text}
+          </span>
+        `;
+        feed.appendChild(item);
+      });
+    }
+
+    // ─── Main polling loop ───
+    document.addEventListener('DOMContentLoaded', () => {
+      // Animate progress bars
+      const bars = document.querySelectorAll('.progress-fill');
+      bars.forEach(bar => {
+        const width = bar.style.width;
+        bar.style.width = '0%';
+        setTimeout(() => { bar.style.width = width; }, 500);
+      });
+
+      // Initial data load
+      updateStats();
+      updateActivityFeed();
+
+      // Poll every 5 seconds
+      setInterval(() => {
+        updateStats();
+        updateActivityFeed();
+      }, 5000);
+
+      // Tab switching
+      document.querySelectorAll('.tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+          document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+          tab.classList.add('active');
+        });
+      });
+
+      // Nav item switching
+      document.querySelectorAll('.nav-item').forEach(item => {
+        item.addEventListener('click', () => {
+          document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+          item.classList.add('active');
+        });
+      });
+    });
+  </script>
+</body>
+</html>
